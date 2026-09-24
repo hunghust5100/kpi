@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Ca Học & Ca Trực - Timeline Scrollspy & Hai Workspace</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Google Identity Services (GIS) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              math: '#4f46e5',
+              mathLight: '#eef2ff',
+              mathBorder: '#c7d2fe',
+              phys: '#ea580c',
+              physLight: '#fff7ed',
+              physBorder: '#fed7aa',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Tinh chỉnh thanh cuộn siêu mỏng thanh lịch */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Ẩn mũi tên mặc định của input type=number */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    /* Hiệu ứng chuyển động mượt */
+    .transition-smooth {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Active scrollspy item */
+    .timeline-item-active {
+      transform: translateX(4px);
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100/70 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- Header / Navigation Bar -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      
+      <!-- Brand & Workspace Tabs -->
+      <div class="flex items-center justify-between sm:justify-start gap-3 sm:gap-6 flex-wrap">
+        <div class="flex items-center space-x-2.5">
+          <div id="brandLogoIcon" class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm transition-smooth">
+            <i id="brandIcon" class="fa-solid fa-square-root-variable text-lg"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-sm font-extrabold text-slate-900 tracking-tight sm:text-base">Work Tracker Pro</h1>
+              <span id="saveBadge" class="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đã lưu
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 font-medium" id="brandSubTitle">Workspace Môn Toán Học</p>
+          </div>
+        </div>
+
+        <!-- Hai Workspace Độc Lập -->
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1">
+          <button 
+            id="wsBtnToan" 
+            onclick="switchWorkspace('toan')" 
+            class="px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-smooth bg-indigo-600 text-white shadow-xs"
+          >
+            <i class="fa-solid fa-square-root-variable text-xs"></i>
+            <span>Toán Học</span>
+            <span id="wsBadgeToan" class="ml-1 px-1.5 py-0.2 bg-white/20 text-white rounded text-[10px] font-mono">0</span>
+          </button>
+
+          <button 
+            id="wsBtnLy" 
+            onclick="switchWorkspace('ly')" 
+            class="px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-smooth text-slate-600 hover:text-orange-600 hover:bg-white/80"
+          >
+            <i class="fa-solid fa-bolt-lightning text-xs"></i>
+            <span>Vật Lý</span>
+            <span id="wsBadgeLy" class="ml-1 px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded text-[10px] font-mono">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 self-end sm:self-auto">
+        <button 
+          onclick="scrollToToday()" 
+          class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs active:scale-95"
+          title="Cuộn tới ngày hôm nay"
+        >
+          <i class="fa-solid fa-calendar-day text-xs"></i>
+          <span>Hôm nay</span>
+        </button>
+
+        <button 
+          onclick="openBackupModal()" 
+          class="inline-flex items-center gap-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs"
+          title="Sao lưu hoặc khôi phục dữ liệu JSON"
+        >
+          <i class="fa-solid fa-file-arrow-up text-slate-500"></i>
+          <span class="hidden sm:inline">Sao lưu</span>
+        </button>
+
+        <button 
+          onclick="openGdriveModal()" 
+          class="inline-flex items-center gap-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs"
+          title="Đồng bộ Google Drive"
+        >
+          <i class="fa-brands fa-google-drive text-emerald-600 text-sm"></i>
+          <span id="driveNavStatus" class="hidden sm:inline">Drive</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Layout Wrapper with Left Sidebar Timeline & Right Content -->
+  <div class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-1 flex flex-col w-full">
+    
+    <!-- Top Month Switcher and Stats Banner -->
+    <section class="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 mb-4 shadow-xs">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        
+        <!-- Bộ chọn tháng -->
+        <div class="flex items-center gap-2">
+          <div class="border border-slate-200 rounded-xl px-3 py-1.5 bg-slate-50 flex items-center gap-3 shadow-2xs">
+            <button onclick="changeMonth(-1)" class="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-slate-600 font-bold transition" title="Tháng trước">
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest hidden md:inline">Tháng:</span>
+            <span id="currentMonthYearLabel" class="text-sm font-black text-slate-900 tracking-wide min-w-[130px] text-center">Tháng 09 / 2026</span>
+
+            <button onclick="changeMonth(1)" class="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-slate-600 font-bold transition" title="Tháng sau">
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+
+          <div class="text-xs text-slate-500 font-semibold hidden md:flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl">
+            <i class="fa-solid fa-layer-group text-slate-400"></i>
+            <span id="activeWorkspaceLabel">Môn: Toán Học</span>
+          </div>
+        </div>
+
+        <!-- Thống kê tháng -->
+        <div class="flex items-center gap-4 sm:gap-6 text-xs w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-slate-500 font-medium">Có mặt:</span>
+            <span id="statPresentRatio" class="font-black text-slate-900">0 / 90</span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span class="text-slate-500 font-medium">Tổng trễ:</span>
+            <span id="statTotalLate" class="font-black text-amber-600">0'</span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+            <span class="text-slate-500 font-medium">Hoàn thành:</span>
+            <span id="statDoneTotal" class="font-black text-indigo-600">0 / 0</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Content Row: Left Timeline Sidebar (Sticky Scrollspy) + Right Day Cards -->
+    <div class="flex items-start gap-5 relative">
+      
+      <!-- TIMELINE SIDEBAR CỐ ĐỊNH BÊN TRÁI (Scrollspy: cuộn đâu highlight đó) -->
+      <aside class="hidden lg:block w-64 shrink-0 sticky top-20 self-start">
+        <div class="bg-white border-2 border-slate-200/90 rounded-2xl p-3 shadow-xs">
+          
+          <div class="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-timeline text-indigo-600" id="sidebarHeaderIcon"></i>
+              <span class="text-xs font-black text-slate-800 uppercase tracking-wider">Timeline Tháng</span>
+            </div>
+            <span class="text-[10px] font-bold text-slate-400 font-mono" id="sidebarDaysCount">31 ngày</span>
+          </div>
+
+          <div class="text-[11px] text-slate-400 mb-2 px-1">
+            Bấm ngày để nhảy tới, cuộn trang để highlight:
+          </div>
+
+          <!-- Danh sách ngày cuộn độc lập mượt mà -->
+          <div id="timelineScrollspyList" class="space-y-1 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
+            <!-- Render tự động các nút ngày qua JavaScript -->
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- KHUNG BÊN PHẢI: Toàn bộ danh sách ngày với BORDER Ô TO CHO TỪNG NGÀY -->
+      <main class="flex-1 min-w-0 space-y-6 pb-24" id="daysContainer">
+        <!-- Render tự động mỗi ngày là 1 CARD TO CÓ BORDER RÕ RÀNG kèm 3 ca Sáng-Chiều-Tối -->
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- Nút nổi nhảy nhanh đến hôm nay -->
+  <button 
+    onclick="scrollToToday()" 
+    class="fixed bottom-5 right-5 z-30 bg-slate-900/90 hover:bg-slate-900 text-white shadow-xl backdrop-blur-md px-4 py-2.5 rounded-full flex items-center gap-2 text-xs font-black transition active:scale-95 border border-slate-700"
+    title="Nhảy nhanh đến ngày hôm nay"
+  >
+    <i class="fa-solid fa-location-crosshairs text-indigo-400"></i>
+    <span>Đến ngày hiện tại</span>
+  </button>
+
+  <!-- Lightbox Modal xem ảnh bài tập phóng to -->
+  <div id="imageLightboxModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="relative max-w-4xl max-h-[92vh] flex flex-col items-center">
+      <div class="absolute -top-10 right-0 flex items-center gap-3">
+        <a id="lightboxDownloadBtn" href="#" download="shift_photo.jpg" class="text-white hover:text-slate-300 text-xs font-bold flex items-center gap-1">
+          <i class="fa-solid fa-download"></i> Tải ảnh
+        </a>
+        <button onclick="closeLightbox()" class="text-white hover:text-slate-300 text-2xl p-1 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <img id="lightboxImg" src="" alt="Ảnh bài tập" class="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border border-white/20">
+      <div class="mt-2 text-white/90 text-xs font-mono" id="lightboxCaption"></div>
+    </div>
+  </div>
+
+  <!-- Modal Sao Lưu & Khôi Phục JSON -->
+  <div id="backupModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+          <i class="fa-solid fa-database text-indigo-600"></i>
+          <span>Sao Lưu & Khôi Phục Dữ Liệu</span>
+        </h3>
+        <button onclick="closeBackupModal()" class="text-slate-400 hover:text-slate-700 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-3.5 text-xs">
+        <div class="p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+          <div class="font-black text-slate-900 mb-1">Xuất file JSON toàn diện</div>
+          <p class="text-slate-600 mb-3">Tải về một file duy nhất bao gồm dữ liệu cả 2 Workspace Toán & Lý cùng toàn bộ ảnh bài tập đã đính kèm.</p>
+          <button onclick="downloadBackupJson()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-xs">
+            <i class="fa-solid fa-download"></i> Tải về tệp sao lưu (.json)
+          </button>
+        </div>
+
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+          <div class="font-black text-slate-900 mb-1">Khôi phục từ file JSON</div>
+          <p class="text-slate-500 mb-3">Nạp lại tệp dữ liệu đã xuất trước đây để tiếp tục sử dụng mà không làm mất ảnh hay ca trực.</p>
+          <input type="file" id="jsonUploadInput" accept=".json" class="hidden" onchange="handleBackupJsonUpload(event)">
+          <button onclick="document.getElementById('jsonUploadInput').click()" class="w-full bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 py-2 rounded-xl font-bold flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-upload"></i> Chọn tệp JSON để phục hồi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Google Drive Sync -->
+  <div id="gdriveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <i class="fa-brands fa-google-drive text-emerald-600 text-xl"></i>
+          <h3 class="font-black text-slate-900 text-base">Đồng Bộ Google Drive</h3>
+        </div>
+        <button onclick="closeGdriveModal()" class="text-slate-400 hover:text-slate-700 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-3.5 text-xs text-slate-600">
+        <p>Lưu toàn bộ 2 Workspace lên tệp <code class="bg-slate-100 text-slate-900 px-1 py-0.5 rounded font-mono font-bold">work_tracker_backup.json</code> trên Google Drive của bạn.</p>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Google OAuth Client ID</label>
+          <input 
+            type="text" 
+            id="gdriveClientIdInput" 
+            placeholder="Ví dụ: 123456789-xxx.apps.googleusercontent.com" 
+            class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-xs"
+          >
+          <p class="text-[11px] text-slate-400 mt-1">Lấy từ Google Cloud Console. Bạn cũng có thể dùng nút Sao lưu JSON bên cạnh hoàn toàn miễn phí mà không cần cấu hình.</p>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div id="driveDot" class="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+            <span id="driveStatusText" class="font-bold text-slate-600">Chưa đăng nhập</span>
+          </div>
+          <button onclick="authenticateGoogleDrive()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
+            Đăng nhập Google
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button id="saveToDriveBtn" onclick="syncToDrive()" disabled class="disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl font-bold transition">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Lưu lên Drive
+          </button>
+          <button id="loadFromDriveBtn" onclick="syncFromDrive()" disabled class="disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-3 rounded-xl font-bold transition">
+            <i class="fa-solid fa-cloud-arrow-down"></i> Tải từ Drive
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input file ẩn để chọn ảnh tải lên -->
+  <input type="file" id="globalImageInput" accept="image/*" class="hidden" onchange="onImageFileSelected(event)">
+
+  <!-- Hộp thông báo Toast -->
+  <div id="toastBox" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <script>
+    /* Key lưu trữ riêng biệt cho 2 Workspace */
+    const STORAGE_KEY_TOAN = 'study_tracker_v4_toan';
+    const STORAGE_KEY_LY   = 'study_tracker_v4_ly';
+    const STORAGE_KEY_CLIENT_ID = 'study_tracker_gdrive_client_id';
+
+    let activeWorkspace = 'toan'; // 'toan' | 'ly'
+    const today = new Date();
+    let currentYear = today.getFullYear();
+    let currentMonth = today.getMonth() + 1; // 1-12
+
+    let storeToan = {};
+    let storeLy = {};
+
+    let targetShiftForImage = null;
+    let saveDebounceTimer = null;
+    let tokenClient = null;
+    let driveAccessToken = null;
+
+    // Scrollspy observer variable
+    let scrollspyObserver = null;
+    let currentActiveDay = null;
+
+    function loadInitialData() {
+      try {
+        const rawToan = localStorage.getItem(STORAGE_KEY_TOAN);
+        storeToan = rawToan ? JSON.parse(rawToan) : {};
+
+        const rawLy = localStorage.getItem(STORAGE_KEY_LY);
+        storeLy = rawLy ? JSON.parse(rawLy) : {};
+      } catch (err) {
+        console.error('Lỗi khi nạp dữ liệu LocalStorage:', err);
+        storeToan = {};
+        storeLy = {};
+      }
+    }
+
+    function getActiveStore() {
+      return activeWorkspace === 'toan' ? storeToan : storeLy;
+    }
+
+    function persistData(showToastIndicator = false) {
+      try {
+        if (activeWorkspace === 'toan') {
+          localStorage.setItem(STORAGE_KEY_TOAN, JSON.stringify(storeToan));
+        } else {
+          localStorage.setItem(STORAGE_KEY_LY, JSON.stringify(storeLy));
+        }
+
+        const badge = document.getElementById('saveBadge');
+        if (badge) {
+          badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đã lưu';
+        }
+
+        updateWorkspaceBadges();
+        updateStatistics();
+        updateTimelineSidebarBadges();
+        if (showToastIndicator) showToast('Đã lưu dữ liệu!', 'success');
+      } catch (err) {
+        console.error('Lỗi khi lưu LocalStorage:', err);
+        showToast('Bộ nhớ trình duyệt đầy, hãy xuất bớt ảnh hoặc xóa ảnh!', 'error');
+      }
+    }
+
+    function switchWorkspace(wsName) {
+      if (activeWorkspace === wsName) return;
+      activeWorkspace = wsName;
+
+      const wsBtnToan = document.getElementById('wsBtnToan');
+      const wsBtnLy = document.getElementById('wsBtnLy');
+      const brandLogoIcon = document.getElementById('brandLogoIcon');
+      const brandIcon = document.getElementById('brandIcon');
+      const brandSubTitle = document.getElementById('brandSubTitle');
+      const activeWorkspaceLabel = document.getElementById('activeWorkspaceLabel');
+      const sidebarHeaderIcon = document.getElementById('sidebarHeaderIcon');
+
+      if (activeWorkspace === 'toan') {
+        wsBtnToan.className = "px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-smooth bg-indigo-600 text-white shadow-xs";
+        wsBtnLy.className = "px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-smooth text-slate-600 hover:text-orange-600 hover:bg-white/80";
+
+        brandLogoIcon.className = "w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm transition-smooth";
+        brandIcon.className = "fa-solid fa-square-root-variable text-lg";
+        brandSubTitle.innerText = "Workspace Môn Toán Học";
+        activeWorkspaceLabel.innerText = "Môn: Toán Học";
+        sidebarHeaderIcon.className = "fa-solid fa-timeline text-indigo-600";
+      } else {
+        wsBtnLy.className = "px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-smooth bg-orange-600 text-white shadow-xs";
+        wsBtnToan.className = "px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-smooth text-slate-600 hover:text-indigo-600 hover:bg-white/80";
+
+        brandLogoIcon.className = "w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center shadow-sm transition-smooth";
+        brandIcon.className = "fa-solid fa-bolt-lightning text-lg";
+        brandSubTitle.innerText = "Workspace Môn Vật Lý";
+        activeWorkspaceLabel.innerText = "Môn: Vật Lý";
+        sidebarHeaderIcon.className = "fa-solid fa-timeline text-orange-600";
+      }
+
+      renderFullApplication();
+      showToast(`Đã chuyển sang ${activeWorkspace === 'toan' ? 'Toán Học' : 'Vật Lý'}!`, 'info');
+    }
+
+    function updateWorkspaceBadges() {
+      const countToan = Object.keys(storeToan).length;
+      const countLy = Object.keys(storeLy).length;
+      document.getElementById('wsBadgeToan').innerText = countToan;
+      document.getElementById('wsBadgeLy').innerText = countLy;
+    }
+
+    function getDaysInMonth(year, month) {
+      return new Date(year, month, 0).getDate();
+    }
+
+    function getWeekdayFullName(year, month, day) {
+      const d = new Date(year, month - 1, day);
+      const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+      return days[d.getDay()];
+    }
+
+    function getWeekdayShortName(year, month, day) {
+      const d = new Date(year, month - 1, day);
+      const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+      return days[d.getDay()];
+    }
+
+    function changeMonth(delta) {
+      currentMonth += delta;
+      if (currentMonth < 1) {
+        currentMonth = 12;
+        currentYear--;
+      } else if (currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+      }
+      renderFullApplication();
+    }
+
+    function getShiftKey(year, month, day, type) {
+      return `${year}-${month}-${day}-${type.toLowerCase()}`;
+    }
+
+    function renderFullApplication() {
+      const totalDays = getDaysInMonth(currentYear, currentMonth);
+      const monthLabel = document.getElementById('currentMonthYearLabel');
+      monthLabel.innerText = `Tháng ${String(currentMonth).padStart(2, '0')} / ${currentYear}`;
+      document.getElementById('sidebarDaysCount').innerText = `${totalDays} ngày`;
+
+      renderTimelineSidebar(totalDays);
+      renderDaysContainer(totalDays);
+
+      setupScrollspy();
+      updateStatistics();
+      updateWorkspaceBadges();
+      updateTimelineSidebarBadges();
+    }
+
+    // Render danh sách ngày ở Sidebar Timeline bên trái
+    function renderTimelineSidebar(totalDays) {
+      const sidebarContainer = document.getElementById('timelineScrollspyList');
+      sidebarContainer.innerHTML = '';
+
+      for (let day = 1; day <= totalDays; day++) {
+        const dayStr = String(day).padStart(2, '0');
+        const weekdayShort = getWeekdayShortName(currentYear, currentMonth, day);
+        const isToday = (today.getFullYear() === currentYear && (today.getMonth() + 1) === currentMonth && today.getDate() === day);
+
+        const item = document.createElement('button');
+        item.id = `sidebar-day-${day}`;
+        item.type = 'button';
+        item.onclick = () => scrollToDay(day);
+        item.className = `w-full text-left px-2.5 py-1.5 rounded-xl border border-transparent transition-smooth flex items-center justify-between text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 group`;
+
+        item.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-6 text-center font-black ${weekdayShort === 'CN' ? 'text-red-500' : 'text-slate-700'}">${dayStr}</span>
+            <span class="text-[11px] text-slate-400 font-bold">${weekdayShort}</span>
+            ${isToday ? '<span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>' : ''}
+          </div>
+          <div id="sidebar-badge-${day}" class="flex items-center gap-1">
+            <span class="text-[10px] text-slate-400 font-mono">3 ca</span>
+          </div>
+        `;
+
+        sidebarContainer.appendChild(item);
+      }
+    }
+
+    // Cập nhật trạng thái chấm tròn trên Sidebar Timeline
+    function updateTimelineSidebarBadges() {
+      const totalDays = getDaysInMonth(currentYear, currentMonth);
+      const store = getActiveStore();
+
+      for (let day = 1; day <= totalDays; day++) {
+        const badgeElem = document.getElementById(`sidebar-badge-${day}`);
+        if (!badgeElem) continue;
+
+        let attendedCount = 0;
+        let hasImage = false;
+
+        ['sang', 'chieu', 'toi'].forEach(type => {
+          const key = getShiftKey(currentYear, currentMonth, day, type);
+          const data = store[key];
+          if (data) {
+            if (data.present) attendedCount++;
+            if (data.images && data.images.length > 0) hasImage = true;
+          }
+        });
+
+        if (attendedCount > 0 || hasImage) {
+          badgeElem.innerHTML = `
+            ${hasImage ? '<i class="fa-solid fa-camera text-[9px] text-slate-400"></i>' : ''}
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+              attendedCount === 3 
+                ? 'bg-emerald-100 text-emerald-800' 
+                : 'bg-indigo-50 text-indigo-700'
+            }">${attendedCount}/3</span>
+          `;
+        } else {
+          badgeElem.innerHTML = `<span class="text-[10px] text-slate-300 font-mono">0/3</span>`;
+        }
+      }
+    }
+
+    // Render danh sách Ô TO CHO NGÀY ở khung bên phải
+    function renderDaysContainer(totalDays) {
+      const container = document.getElementById('daysContainer');
+      container.innerHTML = '';
+      const store = getActiveStore();
+      const isMath = (activeWorkspace === 'toan');
+      const accentColor = isMath ? 'indigo' : 'orange';
+
+      const shiftTypes = [
+        { key: 'sang', label: 'Sáng', icon: 'fa-sun text-amber-500' },
+        { key: 'chieu', label: 'Chiều', icon: 'fa-cloud-sun text-orange-500' },
+        { key: 'toi', label: 'Tối', icon: 'fa-moon text-indigo-500' }
+      ];
+
+      for (let day = 1; day <= totalDays; day++) {
+        const dayStr = String(day).padStart(2, '0');
+        const monthStr = String(currentMonth).padStart(2, '0');
+        const weekdayFullName = getWeekdayFullName(currentYear, currentMonth, day);
+        const isToday = (today.getFullYear() === currentYear && (today.getMonth() + 1) === currentMonth && today.getDate() === day);
+
+        // BORDER CẢ Ô TO CHO NGÀY (Big Card with prominent distinct border)
+        const dayCard = document.createElement('article');
+        dayCard.id = `day-card-${day}`;
+        dayCard.setAttribute('data-day', day);
+        dayCard.className = `day-card bg-white border-2 border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs transition-smooth relative scroll-mt-24 ${
+          isToday ? 'border-indigo-400/90 ring-4 ring-indigo-50/50' : 'hover:border-slate-300'
+        }`;
+
+        // Header của ô ngày to
+        let dayHeaderHtml = `
+          <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <span class="text-xs sm:text-sm font-black px-3 py-1 rounded-xl ${
+                isToday ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-800'
+              }">
+                Ngày ${dayStr}/${monthStr}
+              </span>
+              <span class="text-xs sm:text-sm font-bold ${weekdayFullName === 'Chủ Nhật' ? 'text-red-500' : 'text-slate-600'}">
+                ${weekdayFullName}
+              </span>
+              ${isToday ? '<span class="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">Hôm nay</span>' : ''}
+            </div>
+
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400">
+              <i class="fa-regular fa-clock"></i>
+              <span>3 Ca: Sáng, Chiều, Tối</span>
+            </div>
+          </div>
+        `;
+
+        // Render 3 Shift Cards bên trong ô ngày to
+        let shiftsHtml = '<div class="space-y-3.5">';
+
+        shiftTypes.forEach(shiftDef => {
+          const shiftKey = getShiftKey(currentYear, currentMonth, day, shiftDef.key);
+          const shiftData = store[shiftKey] || {
+            present: false,
+            late: 0,
+            total: 1,
+            under30: 1,
+            done: 1,
+            title: `${dayStr}/${monthStr} ${shiftDef.label}: <<Được điền>>`,
+            cmt: '',
+            images: []
+          };
+
+          // Render thumbnails ảnh đính kèm
+          let thumbnailsHtml = '';
+          if (shiftData.images && shiftData.images.length > 0) {
+            thumbnailsHtml = `
+              <div class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-2">
+                ${shiftData.images.map((imgSrc, idx) => `
+                  <div class="relative group rounded-lg overflow-hidden border border-slate-200 w-12 h-12 bg-slate-100 cursor-pointer shadow-2xs">
+                    <img src="${imgSrc}" class="w-full h-full object-cover" onclick="openLightbox('${imgSrc}', 'Ảnh Ca ${shiftDef.label} - Ngày ${dayStr}/${monthStr}')"/>
+                    <button onclick="removeImage('${shiftKey}', ${idx})" title="Gỡ ảnh này" class="absolute top-0.5 right-0.5 bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }
+
+          shiftsHtml += `
+            <div data-shift-key="${shiftKey}" class="shift-card rounded-xl border border-slate-200 bg-white p-3.5 hover:border-slate-300 transition-smooth shadow-2xs">
+              <div class="flex flex-col lg:flex-row items-stretch gap-3.5">
+                
+                <!-- KHUNG BÊN TRÁI: Tên ca, ngày và ô input tiêu đề -->
+                <div class="lg:w-1/3 border border-slate-200 rounded-xl p-3 bg-slate-50/60 flex flex-col justify-between">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2 text-xs font-black ${isMath ? 'text-indigo-600' : 'text-orange-600'}">
+                      <i class="fa-solid ${shiftDef.icon}"></i>
+                      <span>Ca ${shiftDef.label}</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-mono">${dayStr}/${monthStr}</span>
+                  </div>
+
+                  <input 
+                    type="text" 
+                    value="${escapeHtml(shiftData.title)}" 
+                    placeholder="${dayStr}/${monthStr} ${shiftDef.label}: <<Được điền>>"
+                    oninput="handleFieldChange('${shiftKey}', 'title', this.value)"
+                    class="w-full bg-white text-slate-800 text-xs font-bold border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 shadow-2xs"
+                    title="Nhấp để sửa tiêu đề ca"
+                  />
+                </div>
+
+                <!-- KHUNG Ở GIỮA: Checkbox Có mặt, Trễ và 3 cột số TỔNG, <30', XONG -->
+                <div class="lg:w-2/5 flex flex-col justify-between py-0.5 px-1 gap-2.5">
+                  
+                  <!-- Dòng 1: Có mặt + Trễ -->
+                  <div class="flex items-center justify-between sm:justify-start sm:gap-6">
+                    <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        ${shiftData.present ? 'checked' : ''} 
+                        onchange="handleFieldChange('${shiftKey}', 'present', this.checked)"
+                        class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                      />
+                      <span class="text-xs font-black text-slate-800">Có mặt</span>
+                    </label>
+
+                    <div class="flex items-center gap-1.5 text-xs text-slate-700">
+                      <span class="font-bold">Trễ</span>
+                      <div class="inline-flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden shadow-2xs">
+                        <button type="button" onclick="stepNumber('${shiftKey}', 'late', -1, 0)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black border-r border-slate-200 text-xs">-</button>
+                        <input 
+                          type="number" 
+                          id="input-${shiftKey}-late"
+                          value="${shiftData.late || 0}" 
+                          min="0"
+                          onchange="handleFieldChange('${shiftKey}', 'late', Math.max(0, parseInt(this.value, 10) || 0))"
+                          class="w-8 text-center text-xs font-bold text-slate-800 focus:outline-none"
+                        />
+                        <button type="button" onclick="stepNumber('${shiftKey}', 'late', 1, 0)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black border-l border-slate-200 text-xs">+</button>
+                      </div>
+                      <span class="text-slate-400 font-bold">'</span>
+                    </div>
+                  </div>
+
+                  <!-- Dòng 2: 3 cột số với tiêu đề in hoa TỔNG, <30', XONG -->
+                  <div class="grid grid-cols-3 gap-2">
+                    
+                    <!-- Cột TỔNG -->
+                    <div class="flex flex-col items-center">
+                      <span class="text-[9px] font-black text-slate-400 tracking-wider mb-1 uppercase">TỔNG</span>
+                      <div class="flex items-center w-full max-w-[95px] border border-slate-200 rounded-lg bg-white overflow-hidden shadow-2xs">
+                        <button type="button" onclick="stepNumber('${shiftKey}', 'total', -1, 0)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border-r border-slate-200">-</button>
+                        <input 
+                          type="number" 
+                          id="input-${shiftKey}-total"
+                          value="${shiftData.total ?? 1}" 
+                          min="0"
+                          onchange="handleFieldChange('${shiftKey}', 'total', Math.max(0, parseInt(this.value, 10) || 0))"
+                          class="w-full text-center text-xs font-bold text-slate-800 focus:outline-none"
+                        />
+                        <button type="button" onclick="stepNumber('${shiftKey}', 'total', 1, 0)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border-l border-slate-200">+</button>
+                      </div>
+                    </div>
+
+                    <!-- Cột <30' -->
+                    <div class="flex flex-col items-center">
+                      <span class="text-[9px] font-black text-slate-400 tracking-wider mb-1 uppercase">&lt;30'</span>
+                      <div class="flex items-center w-full max-w-[95px] border border-slate-200 rounded-lg bg-white overflow-hidden shadow-2xs">
+                        <button type="button" onclick="stepNumber('${shiftKey}', 'under30', -1, 0)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border-r border-slate-200">-</button>
+                        <input 
+                          type="number" 
+                          id="input-${shiftKey}-under30"
+                          value="${shiftData.under30 ?? 1}" 
+                          min="0"
+                          onchange="handleFieldChange('${shiftKey}', 'under30', Math.max(0, parseInt(this.value, 10) || 0))"
+                          class="w-full text-center text-xs font-bold text-slate-800 focus:outline-none"
+                        />
+                        <button type="button" onclick="stepNumber('${shiftKey}', 'under30', 1, 0)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border-l border-slate-200">+</button>
+                      </div>
+                    </div>
+
+                    <!-- Cột XONG -->
+                    <div class="flex flex-col items-center">
+                      <span class="text-[9px] font-black text-slate-400 tracking-wider mb-1 uppercase">XONG</span>
+                      <div class="flex items-center w-full max-w-[95px] border border-slate-200 rounded-lg bg-white overflow-hidden shadow-2xs">
+                        <button type="button" onclick="stepNumber('${shiftKey}', 'done', -1, 0)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border-r border-slate-200">-</button>
+                        <input 
+                          type="number" 
+                          id="input-${shiftKey}-done"
+                          value="${shiftData.done ?? 1}" 
+                          min="0"
+                          onchange="handleFieldChange('${shiftKey}', 'done', Math.max(0, parseInt(this.value, 10) || 0))"
+                          class="w-full text-center text-xs font-bold text-slate-800 focus:outline-none"
+                        />
+                        <button type="button" onclick="stepNumber('${shiftKey}', 'done', 1, 0)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border-l border-slate-200">+</button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- KHUNG BÊN PHẢI: CMT và nút dán/đính ảnh -->
+                <div class="lg:w-1/3 border border-slate-200 rounded-xl p-2.5 bg-white flex flex-col justify-between">
+                  <div class="flex items-center justify-between mb-1 pb-1 border-b border-slate-100">
+                    <span class="text-xs font-black text-slate-700 uppercase tracking-wider">CMT</span>
+                    <button 
+                      type="button" 
+                      onclick="openImagePickerForShift('${shiftKey}')" 
+                      class="text-[11px] font-bold ${isMath ? 'text-indigo-600 hover:text-indigo-800' : 'text-orange-600 hover:text-orange-800'} inline-flex items-center gap-1 transition"
+                      title="Tải ảnh hoặc bấm vào ô cmt và ấn Ctrl+V để dán ảnh"
+                    >
+                      <i class="fa-solid fa-camera text-[10px]"></i>
+                      <span>Dán / Đính ảnh</span>
+                    </button>
+                  </div>
+
+                  <textarea 
+                    rows="2" 
+                    placeholder="Nhập nhận xét hoặc bấm vào đây ấn Ctrl+V để dán ảnh bài tập..."
+                    onfocus="targetShiftForImage = '${shiftKey}'"
+                    oninput="handleFieldChange('${shiftKey}', 'cmt', this.value)"
+                    class="w-full resize-none text-xs text-slate-700 focus:outline-none rounded p-1 placeholder:text-slate-300 font-sans"
+                  >${escapeHtml(shiftData.cmt || '')}</textarea>
+
+                  <!-- Danh sách ảnh thu nhỏ -->
+                  ${thumbnailsHtml}
+                </div>
+
+              </div>
+            </div>
+          `;
+        });
+
+        shiftsHtml += '</div>';
+        dayCard.innerHTML = dayHeaderHtml + shiftsHtml;
+        container.appendChild(dayCard);
+      }
+    }
+
+    // Thiết lập IntersectionObserver Scrollspy: Cuộn đâu highlight đó
+    function setupScrollspy() {
+      if (scrollspyObserver) {
+        scrollspyObserver.disconnect();
+      }
+
+      const dayCards = document.querySelectorAll('.day-card');
+      if (dayCards.length === 0) return;
+
+      const observerOptions = {
+        root: null,
+        rootMargin: '-15% 0px -70% 0px',
+        threshold: 0
+      };
+
+      scrollspyObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const day = entry.target.getAttribute('data-day');
+            highlightTimelineSidebarDay(day, true);
+          }
+        });
+      }, observerOptions);
+
+      dayCards.forEach(card => scrollspyObserver.observe(card));
+    }
+
+    // Highlight ngày trên sidebar timeline và tự cuộn sidebar theo
+    function highlightTimelineSidebarDay(day, autoScrollSidebar = false) {
+      if (currentActiveDay === day) return;
+      currentActiveDay = day;
+
+      const isMath = (activeWorkspace === 'toan');
+      const activeBg = isMath ? 'bg-indigo-600 text-white shadow-xs' : 'bg-orange-600 text-white shadow-xs';
+
+      document.querySelectorAll('#timelineScrollspyList button').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'bg-orange-600', 'text-white', 'shadow-xs', 'timeline-item-active');
+        btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+        
+        // Trả lại màu chữ ban đầu
+        const dayNumberSpan = btn.querySelector('.w-6');
+        if (dayNumberSpan && !dayNumberSpan.classList.contains('text-red-500')) {
+          dayNumberSpan.classList.add('text-slate-700');
+        }
+      });
+
+      const activeBtn = document.getElementById(`sidebar-day-${day}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+        if (isMath) {
+          activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-xs', 'timeline-item-active');
+        } else {
+          activeBtn.classList.add('bg-orange-600', 'text-white', 'shadow-xs', 'timeline-item-active');
+        }
+
+        const dayNumberSpan = activeBtn.querySelector('.w-6');
+        if (dayNumberSpan) {
+          dayNumberSpan.classList.remove('text-slate-700');
+        }
+
+        // Tự cuộn thanh sidebar để ngày active luôn nằm trong tầm nhìn
+        if (autoScrollSidebar) {
+          activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }
+
+    // Cuộn mượt đến ngày cụ thể
+    function scrollToDay(day) {
+      const card = document.getElementById(`day-card-${day}`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        highlightTimelineSidebarDay(day, true);
+      }
+    }
+
+    function scrollToToday() {
+      const isCurrentMonthNow = (today.getFullYear() === currentYear && (today.getMonth() + 1) === currentMonth);
+      if (!isCurrentMonthNow) {
+        currentYear = today.getFullYear();
+        currentMonth = today.getMonth() + 1;
+        renderFullApplication();
+      }
+
+      setTimeout(() => {
+        scrollToDay(today.getDate());
+      }, 150);
+    }
+
+    function handleFieldChange(shiftKey, field, value) {
+      const store = getActiveStore();
+      if (!store[shiftKey]) {
+        store[shiftKey] = {
+          present: false,
+          late: 0,
+          total: 1,
+          under30: 1,
+          done: 1,
+          title: '',
+          cmt: '',
+          images: []
+        };
+      }
+
+      store[shiftKey][field] = value;
+      clearTimeout(saveDebounceTimer);
+      saveDebounceTimer = setTimeout(() => {
+        persistData(false);
+      }, 300);
+    }
+
+    function stepNumber(shiftKey, field, delta, min = 0) {
+      const store = getActiveStore();
+      if (!store[shiftKey]) {
+        store[shiftKey] = {
+          present: false,
+          late: 0,
+          total: 1,
+          under30: 1,
+          done: 1,
+          title: '',
+          cmt: '',
+          images: []
+        };
+      }
+
+      const current = parseInt(store[shiftKey][field] ?? (field === 'late' ? 0 : 1), 10) || 0;
+      const updated = Math.max(min, current + delta);
+      store[shiftKey][field] = updated;
+
+      const inputElem = document.getElementById(`input-${shiftKey}-${field}`);
+      if (inputElem) inputElem.value = updated;
+
+      persistData(false);
+    }
+
+    // Nén ảnh qua HTML Canvas (Max width 800px, JPEG quality 0.72)
+    function compressImage(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDimension = 800;
+
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const base64 = canvas.toDataURL('image/jpeg', 0.72);
+          callback(base64);
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function addImageToShift(shiftKey, base64) {
+      const store = getActiveStore();
+      if (!store[shiftKey]) {
+        store[shiftKey] = {
+          present: false,
+          late: 0,
+          total: 1,
+          under30: 1,
+          done: 1,
+          title: '',
+          cmt: '',
+          images: []
+        };
+      }
+
+      if (!store[shiftKey].images) store[shiftKey].images = [];
+      store[shiftKey].images.push(base64);
+      persistData(false);
+      renderFullApplication();
+      showToast('Đã dán và lưu ảnh vào ca thành công!', 'success');
+    }
+
+    function removeImage(shiftKey, index) {
+      const store = getActiveStore();
+      if (store[shiftKey] && store[shiftKey].images) {
+        store[shiftKey].images.splice(index, 1);
+        persistData(false);
+        renderFullApplication();
+        showToast('Đã gỡ ảnh đính kèm', 'info');
+      }
+    }
+
+    function openImagePickerForShift(shiftKey) {
+      targetShiftForImage = shiftKey;
+      document.getElementById('globalImageInput').click();
+    }
+
+    function onImageFileSelected(e) {
+      const file = e.target.files[0];
+      if (!file || !targetShiftForImage) return;
+
+      compressImage(file, (base64) => {
+        addImageToShift(targetShiftForImage, base64);
+      });
+      e.target.value = '';
+    }
+
+    // Bắt sự kiện Paste Clipboard toàn cục (Ctrl + V)
+    window.addEventListener('paste', function(e) {
+      const clipboardData = e.clipboardData || window.clipboardData;
+      if (!clipboardData) return;
+
+      const items = clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            let shiftKey = targetShiftForImage;
+
+            if (!shiftKey) {
+              const activeElem = document.activeElement;
+              const card = activeElem ? activeElem.closest('[data-shift-key]') : null;
+              if (card) {
+                shiftKey = card.getAttribute('data-shift-key');
+              }
+            }
+
+            if (!shiftKey) {
+              shiftKey = getShiftKey(currentYear, currentMonth, today.getDate(), 'sang');
+            }
+
+            compressImage(file, (base64) => {
+              addImageToShift(shiftKey, base64);
+            });
+            break;
+          }
+        }
+      }
+    });
+
+    function updateStatistics() {
+      const totalDays = getDaysInMonth(currentYear, currentMonth);
+      const store = getActiveStore();
+
+      let totalShifts = totalDays * 3;
+      let presentCount = 0;
+      let totalLate = 0;
+      let doneCount = 0;
+      let totalItems = 0;
+
+      for (let day = 1; day <= totalDays; day++) {
+        ['sang', 'chieu', 'toi'].forEach(type => {
+          const key = getShiftKey(currentYear, currentMonth, day, type);
+          const data = store[key];
+          if (data) {
+            if (data.present) presentCount++;
+            totalLate += (parseInt(data.late, 10) || 0);
+            doneCount += (parseInt(data.done, 10) || 0);
+            totalItems += (parseInt(data.total, 10) || 0);
+          } else {
+            totalItems += 1;
+          }
+        });
+      }
+
+      document.getElementById('statPresentRatio').innerText = `${presentCount} / ${totalShifts}`;
+      document.getElementById('statTotalLate').innerText = `${totalLate}'`;
+      document.getElementById('statDoneTotal').innerText = `${doneCount} / ${totalItems}`;
+    }
+
+    function openLightbox(imgSrc, caption) {
+      document.getElementById('lightboxImg').src = imgSrc;
+      document.getElementById('lightboxCaption').innerText = caption || '';
+      document.getElementById('lightboxDownloadBtn').href = imgSrc;
+      document.getElementById('imageLightboxModal').classList.remove('hidden');
+    }
+
+    function closeLightbox() {
+      document.getElementById('imageLightboxModal').classList.add('hidden');
+    }
+
+    document.getElementById('imageLightboxModal').onclick = (e) => {
+      if (e.target.id === 'imageLightboxModal') closeLightbox();
+    };
+
+    function openBackupModal() {
+      document.getElementById('backupModal').classList.remove('hidden');
+    }
+
+    function closeBackupModal() {
+      document.getElementById('backupModal').classList.add('hidden');
+    }
+
+    function openGdriveModal() {
+      document.getElementById('gdriveModal').classList.remove('hidden');
+    }
+
+    function closeGdriveModal() {
+      document.getElementById('gdriveModal').classList.add('hidden');
+    }
+
+    function downloadBackupJson() {
+      const payload = {
+        app: 'WorkTracker_Math_Physics_v4',
+        exportedAt: new Date().toISOString(),
+        toan: storeToan,
+        ly: storeLy
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `work_tracker_backup_${currentYear}_T${currentMonth}.json`);
+      downloadAnchor.click();
+
+      showToast('Đã tải xuống file sao lưu JSON!', 'success');
+      closeBackupModal();
+    }
+
+    function handleBackupJsonUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if (imported.toan || imported.ly) {
+            storeToan = imported.toan || {};
+            storeLy   = imported.ly || {};
+          } else {
+            if (activeWorkspace === 'toan') storeToan = imported;
+            else storeLy = imported;
+          }
+
+          localStorage.setItem(STORAGE_KEY_TOAN, JSON.stringify(storeToan));
+          localStorage.setItem(STORAGE_KEY_LY, JSON.stringify(storeLy));
+
+          renderFullApplication();
+          showToast('Khôi phục dữ liệu từ tệp JSON thành công!', 'success');
+          closeBackupModal();
+        } catch (err) {
+          showToast('Tệp JSON không hợp lệ!', 'error');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+
+    function initGoogleDriveAuth() {
+      const savedClientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || '';
+      document.getElementById('gdriveClientIdInput').value = savedClientId;
+
+      if (!savedClientId || !window.google || !google.accounts) return;
+
+      try {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: savedClientId,
+          scope: 'https://www.googleapis.com/auth/drive.file',
+          callback: (res) => {
+            if (res.error) {
+              showToast('Lỗi xác thực Google: ' + res.error, 'error');
+              return;
+            }
+            driveAccessToken = res.access_token;
+            setDriveConnected(true);
+            showToast('Kết nối Google Drive thành công!', 'success');
+          }
+        });
+      } catch (err) {
+        console.warn('Google Token Client init error:', err);
+      }
+    }
+
+    function setDriveConnected(connected) {
+      const dot = document.getElementById('driveDot');
+      const text = document.getElementById('driveStatusText');
+      const saveBtn = document.getElementById('saveToDriveBtn');
+      const loadBtn = document.getElementById('loadFromDriveBtn');
+      const navStatus = document.getElementById('driveNavStatus');
+
+      if (connected) {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+        text.innerText = 'Đã kết nối tài khoản Google';
+        text.className = 'font-bold text-emerald-600';
+        saveBtn.disabled = false;
+        loadBtn.disabled = false;
+        navStatus.innerText = 'Drive: Đã kết nối';
+      } else {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-300';
+        text.innerText = 'Chưa đăng nhập';
+        text.className = 'font-bold text-slate-500';
+        saveBtn.disabled = true;
+        loadBtn.disabled = true;
+        navStatus.innerText = 'Drive';
+      }
+    }
+
+    function authenticateGoogleDrive() {
+      const clientId = document.getElementById('gdriveClientIdInput').value.trim();
+      if (!clientId) {
+        showToast('Vui lòng nhập Google Client ID trước!', 'warning');
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY_CLIENT_ID, clientId);
+      initGoogleDriveAuth();
+
+      if (tokenClient) {
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+      } else {
+        showToast('Đang kết nối thư viện Google, vui lòng thử lại...', 'info');
+      }
+    }
+
+    async function syncToDrive() {
+      if (!driveAccessToken) {
+        showToast('Vui lòng đăng nhập Google trước!', 'warning');
+        return;
+      }
+      showToast('Đang lưu tệp lên Google Drive...', 'info');
+
+      try {
+        const payload = {
+          app: 'WorkTracker_Math_Physics_v4',
+          exportedAt: new Date().toISOString(),
+          toan: storeToan,
+          ly: storeLy
+        };
+        const fileName = 'work_tracker_backup.json';
+        const fileContent = JSON.stringify(payload, null, 2);
+
+        const query = encodeURIComponent(`name='${fileName}' and trashed=false`);
+        const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
+          headers: { Authorization: `Bearer ${driveAccessToken}` }
+        });
+        const searchData = await searchRes.json();
+        const fileId = (searchData.files && searchData.files.length > 0) ? searchData.files[0].id : null;
+
+        if (fileId) {
+          await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+            method: 'PATCH',
+            headers: {
+              Authorization: `Bearer ${driveAccessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: fileContent
+          });
+        } else {
+          const metadata = { name: fileName, mimeType: 'application/json' };
+          const form = new FormData();
+          form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+          form.append('file', new Blob([fileContent], { type: 'application/json' }));
+
+          await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${driveAccessToken}` },
+            body: form
+          });
+        }
+
+        showToast('Đã lưu dữ liệu 2 Workspace lên Google Drive!', 'success');
+        closeGdriveModal();
+      } catch (err) {
+        showToast('Lỗi tải lên Google Drive: ' + err.message, 'error');
+      }
+    }
+
+    async function syncFromDrive() {
+      if (!driveAccessToken) {
+        showToast('Vui lòng đăng nhập Google trước!', 'warning');
+        return;
+      }
+      showToast('Đang tải dữ liệu từ Google Drive...', 'info');
+
+      try {
+        const fileName = 'work_tracker_backup.json';
+        const query = encodeURIComponent(`name='${fileName}' and trashed=false`);
+        const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
+          headers: { Authorization: `Bearer ${driveAccessToken}` }
+        });
+        const searchData = await searchRes.json();
+
+        if (!searchData.files || searchData.files.length === 0) {
+          showToast('Chưa tìm thấy file work_tracker_backup.json trên Drive!', 'warning');
+          return;
+        }
+
+        const fileId = searchData.files[0].id;
+        const downloadRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+          headers: { Authorization: `Bearer ${driveAccessToken}` }
+        });
+
+        const cloudData = await downloadRes.json();
+        if (cloudData && (cloudData.toan || cloudData.ly)) {
+          storeToan = cloudData.toan || {};
+          storeLy   = cloudData.ly || {};
+
+          localStorage.setItem(STORAGE_KEY_TOAN, JSON.stringify(storeToan));
+          localStorage.setItem(STORAGE_KEY_LY, JSON.stringify(storeLy));
+
+          renderFullApplication();
+          showToast('Đồng bộ từ Google Drive thành công!', 'success');
+          closeGdriveModal();
+        }
+      } catch (err) {
+        showToast('Lỗi tải từ Google Drive: ' + err.message, 'error');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastBox');
+      const toast = document.createElement('div');
+
+      const styles = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-red-600 text-white',
+        warning: 'bg-amber-600 text-white',
+        info: 'bg-slate-900 text-white'
+      };
+
+      const icons = {
+        success: '<i class="fa-solid fa-circle-check"></i>',
+        error: '<i class="fa-solid fa-circle-exclamation"></i>',
+        warning: '<i class="fa-solid fa-triangle-exclamation"></i>',
+        info: '<i class="fa-solid fa-circle-info"></i>'
+      };
+
+      toast.className = `${styles[type] || styles.info} py-2.5 px-3.5 rounded-xl shadow-lg flex items-center gap-2 text-xs font-bold pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0`;
+      toast.innerHTML = `${icons[type] || icons.info} <span>${escapeHtml(message)}</span>`;
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadInitialData();
+      renderFullApplication();
+      initGoogleDriveAuth();
+    });
+  </script>
+</body>
+</html>
